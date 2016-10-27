@@ -2,12 +2,18 @@
 A computational framework to automate point defect calculations
 
 ##About:
-An open-source Python framework that automates point defects DFT calculations using VASP.The high-throughput DFT calculations are performed using PyLada.Framework automates the computation of point defect formation energies. It creates point defect structures (vacancies, interstitials, sustitutions) and provide open source tools to compute finite size corrections (1. potential alignment, 2. image-charge correction, 3. band-filling correction to shallow defects) with the supercell approach to calculate defect formation energies.
+```
+An open-source Python framework that automates point defects calculations using VASP. Framework creates point defect structures (vacancies, interstitials, sustitutions) and automate computation of point defect formation energy by providing tools to compute finite size corrections (1. potential alignment, 2. image-charge correction, 3. band-filling correction to shallow defects) with the supercell approach. The high-throughput DFT calculations are performed using PyLada.
+```
 
 source code: pylada_defects.py
 
 ##Requirments:
-pylada, tess, spglib
+```
+pylada 
+tess
+spglib
+```
 
 ##Licence:
 GNU General Public Licence (<http://www.gnu.org/licenses/>)
