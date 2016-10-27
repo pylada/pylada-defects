@@ -1,8 +1,6 @@
 #################################################
-# 
-# anuj.goyal@nrel.gov
-# Date: October 26 2016
-#
+# coding: utf-8
+# anuj.goyal@nrel.gov 
 ##################################################
 
 # imports from pylada
