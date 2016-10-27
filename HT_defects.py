@@ -47,7 +47,7 @@ def gather_magmom(mgm):
 
     return out_str
 
-# Generating k-point 
+# generating k-point 
 def gen_kpts(structure,density):
     import numpy as np
     import numpy.linalg as lalg
@@ -113,8 +113,13 @@ vasp.first_trial = { "kpoints": "\n0\nAuto\n10", "encut": 0.9 }
 
 ############### setting up the structures
 
+# input bulk primitive cell
 In2O3prim = read.poscar('POSCAR_In2O3')
+
+# create bulk supercell
 In2O3_sc = supercell(In2O3prim,np.diag([In2O3prim.cell[0][0]*2., In2O3prim.cell[1][1]*2., In2O3prim.cell[2][2]*2.]))
+
+# create list of job folders
 calcs = ['epsilon', 'SC', 'Ini', 'VIn', 'OIn']
 
 structures = {}
@@ -127,22 +132,22 @@ for calc in calcs:
     else:
         structure=deepcopy(In2O3_sc)
 
-        #SC
+        # supercell
         if calc=='SC':
             structures[calc]=structure
 
-        #interstitial
+        # interstitial
         if calc=='Ini':
             ints_list = []
             ints_list = pylada_defects.get_interstitials(structure)
             for j in range(len(ints_list)):
                 structure2 = deepcopy(structure)
-e                structure2.add_atom(ints_list[j][0], ints_list[j][1], ints_list[j][2], 'In')
+                structure2.add_atom(ints_list[j][0], ints_list[j][1], ints_list[j][2], 'In')
                 structure2[-1].spin = 1.
                 key = 'Ini'+'_'+str(j)
                 structures[key]=structure2
 
-        #vacancy
+        # vacancy
         if calc=='VIn':
             vacancy_indices = pylada_defects.get_atom_indices('In', structure)
             for k in range(len(vacancy_indices)):
@@ -154,7 +159,7 @@ e                structure2.add_atom(ints_list[j][0], ints_list[j][1], ints_list
                 key = 'VIn'+'_'+str(k)
                 structures[key]=structure2
 
-        #subsitution
+        # subsitution
         if calc=='OIn':
             vacancy_indices = pylada_defects.get_atom_indices('In', structure)
             for k in range(len(vacancy_indices)):
