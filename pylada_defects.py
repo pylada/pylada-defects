@@ -1,6 +1,6 @@
 #################################################
-# coding: utf-8
-# anuj.goyal@nrel.gov 
+# coding: utf-8 
+# anuj.goyal@nrel.gov
 ##################################################
 
 # imports from pylada
@@ -838,8 +838,12 @@ def get_band_filling(defect, host, potal):
     1.Accounts for the Moss-Burnstein band-filling effect in case of shallow donors and acceptors
     2.Modified the old(or original) Haowei Pengs' version of function(band_filling) in pylada.defects module    
     """
-
-    cbm = host.cbm + potal*eV
+    
+    eig = host.eigenvalues
+    fermi = host.fermi_energy
+    
+    cbm = min([x for x in eig.flatten() if x > fermi]) + potal*eV
+##    cbm = host.cbm + potal*eV
 
     #compute band filling correction to energy (for eigenvalues > cbm)                               
     if defect.eigenvalues.ndim == 3:
@@ -865,38 +869,58 @@ def get_band_filling(defect, host, potal):
     elif defect.eigenvalues.ndim == 2:
         occ_n = np.sum(dummy2[defect.eigenvalues > cbm]) / np.sum(defect.multiplicity)
 
-    vbm = host.vbm + potal*eV
+    vbm = max([x for x in eig.flatten() if x <= fermi]) + potal*eV
+##    vbm = host.vbm + potal*eV
 
+    #Anuj-03/08/17: Made changes to BF incorporate spin-orbit calculations
     #compute band filling correction to energy (for eigenvalues < vbm)                               
-    if defect.eigenvalues.ndim == 3:
-        dummy = np.multiply(vbm - defect.eigenvalues, defect.multiplicity[np.newaxis,:,np.newaxis])
-        dummy = np.multiply(dummy, 1e0 - defect.occupations)
-    elif defect.eigenvalues.ndim == 2:
+    if defect.lsorbit == True:
+        if host.lsorbit == False:
+            print("Error: Use host with SOC")
+            sys.exit()
+        assert host.lsorbit == True
+        assert defect.eigenvalues.ndim == 2
         dummy = np.multiply(vbm - defect.eigenvalues, defect.multiplicity[:,np.newaxis])
-        dummy = np.multiply(dummy, 2e0 - defect.occupations)
+        dummy = np.multiply(dummy, 1e0 - defect.occupations)
+    elif defect.lsorbit == False:
+        if defect.eigenvalues.ndim == 3:
+            dummy = np.multiply(vbm - defect.eigenvalues, defect.multiplicity[np.newaxis,:,np.newaxis])
+            dummy = np.multiply(dummy, 1e0 - defect.occupations)
+        elif defect.eigenvalues.ndim == 2:
+            dummy = np.multiply(vbm - defect.eigenvalues, defect.multiplicity[:,np.newaxis])
+            dummy = np.multiply(dummy, 2e0 - defect.occupations)
 
     result_p = -np.sum(dummy[defect.eigenvalues < vbm])/ np.sum(defect.multiplicity)
 
     #compute occupation corresponding to band filling (< vbm)                                        
-    if defect.eigenvalues.ndim == 3:
-        dummy2_up = np.multiply(1e0-defect.occupations[0], defect.multiplicity[:,np.newaxis])
-        dummy2_down = np.multiply(1e0-defect.occupations[1], defect.multiplicity[:,np.newaxis])
-    elif defect.eigenvalues.ndim == 2:
-        dummy2 = np.multiply(2e0-defect.occupations, defect.multiplicity[:,np.newaxis])
+    if defect.lsorbit == True:
+        if host.lsorbit == False:
+            print("Error: Use host with SOC")
+            sys.exit()
+        assert host.lsorbit == True
+        assert defect.eigenvalues.ndim == 2
+        dummy2 = np.multiply(1e0-defect.occupations, defect.multiplicity[:,np.newaxis])
+    elif defect.lsorbit == False:
+        if defect.eigenvalues.ndim == 3:
+            dummy2_up = np.multiply(1e0-defect.occupations[0], defect.multiplicity[:,np.newaxis])
+            dummy2_down = np.multiply(1e0-defect.occupations[1], defect.multiplicity[:,np.newaxis])
+        elif defect.eigenvalues.ndim == 2:
+            dummy2 = np.multiply(2e0-defect.occupations, defect.multiplicity[:,np.newaxis])
 
-    #compute band filling (< vbm)                                                                    
+    #compute band filling (< vbm)
     if defect.eigenvalues.ndim == 3:
         occ_p_up = np.sum(dummy2_up[defect.eigenvalues[0] < vbm]) / np.sum(defect.multiplicity)
         occ_p_down = np.sum(dummy2_down[defect.eigenvalues[1] < vbm]) / np.sum(defect.multiplicity)
     elif defect.eigenvalues.ndim == 2:
         occ_p = np.sum(dummy2[defect.eigenvalues < vbm]) / np.sum(defect.multiplicity)
-
+        
     if defect.eigenvalues.ndim == 3:
         print("CBM: bf_corr(eV)", "{:0.4f}".format(float(result_n.rescale(eV).magnitude)), 'bf (up, down)', "{:0.4f}".format(float(occ_n_up)), "{:0.4f}".format(float(occ_n_down)))
         print("VBM: bf_corr(eV)", "{:0.4f}".format(float(result_p.rescale(eV).magnitude)), 'bf (up, down)', "{:0.4f}".format(float(occ_p_up)), "{:0.4f}".format(float(occ_p_down)))
     elif defect.eigenvalues.ndim == 2:
         print('CBM: bf_corr(eV)', "{:0.4f}".format(float(result_n.rescale(eV).magnitude)), 'bf', "{:0.4f}".format(float(occ_n)))
         print('VBM: bf_corr(eV)', "{:0.4f}".format(float(result_p.rescale(eV).magnitude)), 'bf', "{:0.4f}".format(float(occ_p)))
+
 
 ##############################################################
 def get_madelungenergy(defect, charge=None, epsilon=1e0, cutoff=100.0):
