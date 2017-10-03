@@ -7,6 +7,7 @@
 #
 ############################################
 # import from python and pylada
+from pylada.vasp import Vasp
 from pylada.vasp.relax import Relax
 from pylada.crystal import read, supercell, neighbors
 import numpy as np
@@ -77,7 +78,7 @@ def gen_kpts(structure,density):
     return "\n0\nGamma\n%2i %2i %2i\n 0. 0. 0.\n" %(n1,n2,n3)
 
 ############### setting up the functional
-vasp=Relax()
+vasp=Vasp()
 
 vasp.program = '/home/vstevano/bin/vasp'
 
@@ -92,8 +93,7 @@ vasp.sigma      = 0.05
 vasp.ediff      = 1.0e-6
 vasp.ediffg     = -0.01
 vasp.convergence= 1.0e-6
-vasp.minrelsteps= 4
-vasp.nsw        = 75
+vasp.nsw        = 1
 vasp.lwave      = True
 vasp.lorbit     = 10
 vasp.lplane     = True
@@ -107,9 +107,14 @@ vasp.loptics    = False
 vasp.lpead      = False
 vasp.algo = "Normal"
 vasp.relaxation = "ionic"
-vasp.maxiter = 10
-vasp.keep_steps = True
-vasp.first_trial = { "kpoints": "\n0\nAuto\n10", "encut": 0.9 }
+
+relax = Relax(copy=vasp)
+
+relax.nsw=75
+relax.minrelsteps= 4
+relax.maxiter = 10
+relax.keep_steps = True
+relax.first_trial = { "kpoints": "\n0\nAuto\n10", "encut": 0.9 }
 
 ############### setting up the structures
 
@@ -189,8 +194,7 @@ for name in structures:
         # job folder for this lattice.
         job = jobfolder / name
         vasp_individual = deepcopy(vasp)
-  
-        vasp_individual.relaxation = "static"
+        
         vasp_individual.add_keyword('lepsilon',True)
         vasp_individual.add_keyword('lrpa',False)
         vasp_individual.ibrion = 7
@@ -205,8 +209,8 @@ for name in structures:
         
         # job folder for this lattice.
         job = jobfolder / 'defects' / name 
-        vasp_individual = deepcopy(vasp)
-        vasp_individual.ispin=2
+        relax_individual = deepcopy(relax)
+        relax_individual.ispin=2
   
         magmom=''
         for ii in range(len(structure)):
@@ -215,11 +219,11 @@ for name in structures:
             else:
                 magmom=magmom+'%s  ' %(0.)
 
-        vasp_individual.magmom=gather_magmom(magmom)
-        vasp_individual.kpoints="\n0\nGamma\n2  2  2\n0. 0. 0.\n"
-        vasp_individual.ediffg = -0.01
+        relax_individual.magmom=gather_magmom(magmom)
+        relax_individual.kpoints="\n0\nGamma\n2  2  2\n0. 0. 0.\n"
+        relax_individual.ediffg = -0.01
 
-        job.functional = vasp_individual
+        job.functional = relax_individual
         job.params["structure"] = structure
 
 
