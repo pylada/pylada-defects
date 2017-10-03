@@ -190,7 +190,7 @@ for name in structures:
         job = jobfolder / name
         vasp_individual = deepcopy(vasp)
   
-        vasp_individual.relaxation = "ionic"
+        vasp_individual.relaxation = "static"
         vasp_individual.add_keyword('lepsilon',True)
         vasp_individual.add_keyword('lrpa',False)
         vasp_individual.ibrion = 7
