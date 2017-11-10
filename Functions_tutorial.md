@@ -54,6 +54,13 @@ pylada.crystal.defects.reindex_sites
 > - Reindexes atoms of structure according to lattice sites
 > - reindex_sites(structure, lattice, tolerance=0.5)
 
+```
+pylada.crystal.third_order_cc
+```
+> - Computes the third order correction term in image charge correction for defects
+> - Eq. 6 and 7 in reference: [Modelling Simul. Mater. Sci. Eng. 17 (2009) 084002](http://iopscience.iop.org/article/10.1088/0965-0393/17/8/084002/meta)
+> - :param lattice:`Structure`
+
 ---
 #### Functions handling VASP output
 
@@ -86,11 +93,19 @@ Extract.eigenvalues
 #### Functions handling units
 ```
 pylada.physics.a0
+```
+> - bohr_radius
+
+```
 pylada.physics.Ry
+```
+> - Rydberg
+
+```
 pylada.ewald.ewald
 ```
----
-#### Specific functions
-```
-pylada.crystal.third_order_cc
-```
+> - Ewald summation
+> - ewald(structure, charges=None, cutoff=None, kwargs)
+> - :param structure:`Structure`, :param dict charges: Map from `atomic-types to charges`,
+          :param float cutoff: `Cutoff energy` when computing reciprocal space part. Defaults to :py:math:`15 Ry`.
+
