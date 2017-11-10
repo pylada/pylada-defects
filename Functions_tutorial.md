@@ -36,7 +36,7 @@ pylada.crystal.neighbors
 ```
 > - Returns list of neighbors to input position
 > - :param lattice: `Structure`, :param nmax: `Integer` number of first neighbors to search for, 
-          :param center: `Position for which to determine first neighbors`, :param tolerance: `tolerance`
+          :param center: `Position` for which to determine first neighbors, :param tolerance: `tolerance`
 > - :returns: `A list of 3-tuples`. The first item is a refence to the
           neighboring atom, the second is the position of its
           relevant periodic image *relative* to the center, the
@@ -57,8 +57,8 @@ pylada.crystal.defects.reindex_sites
 ```
 pylada.crystal.third_order_cc
 ```
-> - Computes the third order correction term in image charge correction for defects
-> - Eq. 6 and 7 in reference: [Modelling Simul. Mater. Sci. Eng. 17 (2009) 084002](http://iopscience.iop.org/article/10.1088/0965-0393/17/8/084002/meta)
+> - Computes the third order correction term in the image charge correction for defects
+> - Eq.(6) and Eq.(7) in reference: [Modelling Simul. Mater. Sci. Eng. 17 (2009) 084002](http://iopscience.iop.org/article/10.1088/0965-0393/17/8/084002/meta)
 > - :param lattice:`Structure`
 
 ---
@@ -81,7 +81,7 @@ Extract.fermi_energy
 Extract.electropot
 ```
 > - Greps average atomic electrostatic potentials from OUTCAR
-> - reutrns a numpy array
+> - returns as numpy array
 
 ```
 Extract.eigenvalues
