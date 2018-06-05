@@ -25,7 +25,7 @@ High-thoughput workflow for point defect calculations in (1) Si, (2) GaN
 If you use pylada_defects for your work, please cite the [defect automation paper](https://www.sciencedirect.com/science/article/pii/S0927025617300010)
 
 ### Licence:
-GNU General Public Licence (<http://www.gnu.org/licenses/>)
+[GNU General Public Licence](http://www.gnu.org/licenses/)
 
 ## Authors:
 Anuj Goyal
@@ -36,4 +36,4 @@ Haowei Peng
 
 Stephan Lany
 
-Vladan Stevanovic
+Vladan Stevanovi\'{c}
