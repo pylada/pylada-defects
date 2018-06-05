@@ -1,4 +1,4 @@
-### Instructions to install python, pylada before using pylada_defects.py
+### Instructions to install pylada before using pylada_defects.py
 
 1. Make a copy of your current $HOME/.bashrc
 2. Remove all module calls from $HOME/.bashrc
