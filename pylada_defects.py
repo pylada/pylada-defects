@@ -1,6 +1,8 @@
 #################################################
-# coding: utf-8 
+# 
 # anuj.goyal@nrel.gov
+# Date: October 17 2016
+#
 ##################################################
 
 # imports from pylada
@@ -301,6 +303,9 @@ def get_unique_wyckoff(prim):
     """
     p = deepcopy(prim)
 
+    #Anuj_04/07/17: To make sure unique wyckoff is done on primitive
+#    p = primitive(pp)
+
     # compute space group for the given primitive cell using spglib
     sym = spglib.get_symmetry(p, 0.1)
 
@@ -433,9 +438,10 @@ def get_atom_indices(atomtype, structure):
     unq_wyck = get_unique_wyckoff(structure)
     for i in range(len(unq_wyck)):
         if unq_wyck[i][3]==atomtype:
-            a = np.array([unq_wyck[i][0], unq_wyck[i][1], unq_wyck[i][2]])
+#            a = np.array([unq_wyck[i][0], unq_wyck[i][1], unq_wyck[i][2]])
+            a = np.around(np.array([unq_wyck[i][0], unq_wyck[i][1], unq_wyck[i][2]]), decimals=4)
             for j in range(len(structure)):
-                b = structure[j].pos
+                b = np.around(structure[j].pos, decimals=4)
                 if all (np.isclose(a, b)):
                     atom_indices.append(j)
 
@@ -872,7 +878,7 @@ def get_band_filling(defect, host, potal):
     vbm = max([x for x in eig.flatten() if x <= fermi]) + potal*eV
 ##    vbm = host.vbm + potal*eV
 
-    #Anuj-03/08/17: Made changes to BF incorporate spin-orbit calculations
+    #Anuj_03/08/17: Made changes to BF incorporate spin-orbit calculations
     #compute band filling correction to energy (for eigenvalues < vbm)                               
     if defect.lsorbit == True:
         if host.lsorbit == False:
@@ -961,7 +967,8 @@ def get_madelungenergy(defect, charge=None, epsilon=1e0, cutoff=100.0):
     struc.scale = structure.scale
     struc.add_atom(0., 0., 0., "P", charge=charge)
     
-    result = ewald(struc, ewald_cutoff).energy / epsilon
+    #Anuj_05/22/18: added "cutoff" in ewald syntax
+    result = ewald(struc, cutoff=ewald_cutoff).energy / epsilon
     return -1*result.rescale(eV)
 
 ##############################################################
@@ -986,8 +993,9 @@ def get_3rdO_corr(defect, charge=None, n=100, epsilon=1e0):
     from quantities import elementary_charge, eV, pi, angstrom
     from pylada.physics import a0, Ry
 
-     ## Pgraf's port of the old c-version. (Haowei comments could be faster)
-    from pylada.crystal import third_order_cc
+    ## Pgraf's port of the old c-version. (Haowei comments could be faster)
+    ## Anuj_05/22/18: Modified to "third_order" in pylada.crystal.defects 
+    from pylada.crystal.defects import third_order
 
     if charge is None: charge = 1e0
     elif charge == 0: return 0e0 *eV
@@ -998,7 +1006,8 @@ def get_3rdO_corr(defect, charge=None, n=100, epsilon=1e0):
 
     cell = (structure.cell*structure.scale).rescale(a0)
 
-    scaled_3rdO = third_order_cc(cell, n) * (4e0*pi/3e0)* Ry.rescale(eV) * charge * charge \
+#Anuj_05/22/18: modified to "third_order"
+    scaled_3rdO = third_order(cell, n) * (4e0*pi/3e0)* Ry.rescale(eV) * charge * charge \
         *(1e0- 1e0/epsilon) / epsilon
 
     return scaled_3rdO
@@ -1023,7 +1032,8 @@ def thirdO(defect, charge=None, n=100):
     from pylada.physics import a0, Ry
 
     ## Pgraf's port of the old c-version. Could be faster
-    from pylada.crystal import third_order_cc
+    ## Anuj_05/22/18: modified to "third_order" in pylada.crystal.defects
+    from pylada.crystal.defects import third_order
 
     if charge is None: charge = 1e0
     elif charge == 0: return 0e0 *eV
@@ -1033,7 +1043,8 @@ def thirdO(defect, charge=None, n=100):
 
     cell = (structure.cell*structure.scale).rescale(a0)
 
-    thirdO = third_order_cc(cell, n) * (4e0*pi/3e0) * Ry.rescale(eV) * charge * charge
+    #Anuj_05/22/18:modified to "third_order"
+    thirdO = third_order(cell, n) * (4e0*pi/3e0) * Ry.rescale(eV) * charge * charge
 
     return thirdO
 
@@ -1129,6 +1140,27 @@ def write_interstitials(structure, ttol=0.5):
 
     with open("POSCAR_ints", "w") as file: write.poscar(test_str, file, vasp5=True)
 
+##############################################################
+def create_supercell(struct, N1, N2, N3):
+    """ Create a supercell with lattice vector N1 x N2 x N3 of input cell
+
+    Parameters
+    struct = input structure (whoes supercell to be made) as pylada structure obj
+    N1, N2, N3 = multiple for X, Y, Z cell vectors respectively
+
+    Returns
+    supercell = (N1 x N2 x N3) of input structure
+    """
+
+    N1 = float(N1)
+    N2 = float(N2)
+    N3 = float(N3)
+    input_str = deepcopy(struct)
+    transp_cell = np.transpose(input_str.cell)
+    new_cell = np.transpose(np.array([N1*transp_cell[0], N2*transp_cell[1], N3*transp_cell[2]]))
+    sc = supercell(input_str, new_cell)
+
+    return sc
 ##############################################################
 if  __name__=='__main__':
     """ Small code to test the output of above defined functions
