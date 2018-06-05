@@ -2,9 +2,6 @@ do_multiple_mpi_programs=False
 
 mpirun_exe = "mpirun {program}"
 
-def machine_dependent_call_modifier(formatter=None, comm=None, env=None):
-    pass
-
 ###################################################
 vasp_has_nlep = True
 
