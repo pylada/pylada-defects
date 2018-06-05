@@ -1,13 +1,16 @@
-Instructions to install python, pylada and additional preparations before using pylada_defects.py
+### Instructions to install python, pylada and additional preparations before using pylada_defects.py
 
 1. Make a copy of your current $HOME/.bashrc
 2. Remove all module calls from $HOME/.bashrc
 3. Remove all additions to the PYTHONPATH from $HOME/.bashrc
 4. Logout and logback in, do not source $HOME/.bashrc, as you need your PATH variable to be reset
 
-########### installing python using conda ##########
+#### installing python using conda 
 
-5. module purge
+5. Purge all modules currently loaded
+
+   ```module purge```
+
 6. If conda module exists on your HPC use
 
    module load conda/XXXX
@@ -24,7 +27,7 @@ otherwise install conda in your $HOME and add conda path in your .bashrc
 
    source activate nameofenv
 
-########### installing pylada #####################
+#### installing pylada
 
 9. Install pylada using pip
 
@@ -44,7 +47,8 @@ module purge
 source activate nameofenv
 }
 
-########### before using pylada_defects.py #########
+#### before using pylada_defects.py
+
 11. Activate your pylada environment
 
 12. Put the whole folder /pyspglib in somewhere equivalent
