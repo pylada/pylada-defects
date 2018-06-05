@@ -1,0 +1,278 @@
+######################################
+#
+# Example 2
+# System: GaN
+# Point defects: Vacancies, Interstitials, Anti-sites
+# Functional: DFT GGA-PBE
+#
+######################################
+from pylada.vasp import Vasp
+from pylada.vasp.relax import Relax
+from pylada.crystal import read, supercell, neighbors
+import numpy as np
+import pylada_defects
+from random import choice, random
+from copy import deepcopy
+######################################
+# find nghs 
+def find_ngh_indices(atomind,structure):
+    """ function to return ngh indices from given atomind
+   
+    """
+    
+    nghs=neighbors(structure,1,structure[atomind],0.2)
+    ngh_indices=[]
+
+    for ii in range(len(structure)):
+        if any([ all(structure[ii].pos==ngh[0].pos) for ngh in nghs]) and any([ structure[ii].type==ngh[0].type for ngh in nghs]):
+           ngh_indices.append(ii)
+
+    return ngh_indices
+
+# condensed magmom
+def gather_magmom(mgm):
+    mgm=mgm.split()
+    hlp=[ [ mgm[0] ] ]
+
+    for ii in range(1,len(mgm)):
+        if mgm[ii]==mgm[ii-1]:
+            hlp[len(hlp)-1].append(mgm[ii])
+        else:
+            hlp.append([mgm[ii]])
+
+    out_str=''
+
+    for hh in hlp:
+        out_str=out_str+'%s*%1.1f ' %(len(hh),float(hh[0]))
+
+    return out_str
+
+# Generating k-point 
+def gen_kpts(structure,density):
+    import numpy as np
+    import numpy.linalg as lalg
+
+    nkpts=density/len(structure)
+    direct_cell=np.transpose(structure.cell)
+    rec_cell=2*np.pi*np.transpose(lalg.inv(direct_cell))
+
+    b1=np.sqrt(np.dot(rec_cell[0],rec_cell[0]))
+    b2=np.sqrt(np.dot(rec_cell[1],rec_cell[1]))
+    b3=np.sqrt(np.dot(rec_cell[2],rec_cell[2]))
+
+    step=(b1*b2*b3/nkpts)**(1./3)
+
+    n1=int(round(b1/step))
+    if np.mod(n1,2)!=0: n1=n1-1
+    n2=int(round(b2/step))
+    if np.mod(n2,2)!=0: n2=n2-1
+    n3=int(round(b3/step))
+    if np.mod(n3,2)!=0: n3=n3-1
+    print n1,n2,n3
+
+    if n1==0:n1=1
+    if n2==0:n2=1
+    if n3==0:n3=1
+
+    return "\n0\nGamma\n%2i %2i %2i\n 0. 0. 0.\n" %(n1,n2,n3)
+
+############### setting up the functional
+vasp=Vasp()
+
+vasp.program = 'path-to-vasp-executable'
+pseudoDir = 'path-to-vasp-pseudopotentials'
+
+vasp.add_specie = "N", pseudoDir + "/N"
+vasp.add_specie = "Ga", pseudoDir + "/Ga"
+
+# vasp incar parameters
+vasp.prec       = "accurate"
+vasp.encut      = 340.
+vasp.ismear     = 0
+vasp.sigma      = 0.05
+vasp.ediff      = 1.0e-6
+vasp.ediffg     = -0.01
+vasp.convergence= 1.0e-6
+vasp.nsw        = 1
+vasp.lwave      = True
+vasp.lorbit     = 10
+vasp.lplane     = True
+vasp.addgrid    = True
+vasp.npar       = 8
+vasp.isym       = 0
+vasp.lcharg     = True
+vasp.lwave      = True
+vasp.lmaxmix    = 4
+vasp.loptics    = False
+vasp.lpead      = False
+vasp.algo = "Normal"
+vasp.relaxation = "ionic"
+
+relax = Relax(copy=vasp)
+
+relax.nsw = 50
+relax.minrelsteps = 2
+relax.maxiter = 10
+relax.keep_steps = True
+relax.first_trial = { "kpoints": "\n0\nAuto\n10", "encut": 0.9 }
+
+############### setting up the structures
+
+# read primitive cell
+pc = read.poscar('POSCAR_pc')
+
+# create supercell cell
+sc = pylada_defects.create_supercell(pc, 3., 4., 2.)
+
+calcs = ['epsilon', 'bulk', 'Ga_I', 'N_I', 'Ga_N', 'N_Ga', 'V_N', 'V_Ga']
+
+structures = {}
+
+for calc in calcs:
+    if calc=='epsilon':
+        structure=deepcopy(pc)
+        structures[calc]=structure
+
+    else:
+        structure=deepcopy(sc)
+
+        #interstitial
+        if calc=='N_I':
+            ints_list = []
+            ints_list = pylada_defects.get_interstitials(structure, ttol=1.0)
+            for j in range(len(ints_list)):
+                structure2 = deepcopy(structure)
+                structure2.add_atom(ints_list[j][0], ints_list[j][1], ints_list[j][2], 'N')
+                structure2[-1].spin = 1.
+                key = 'N_I'+'-'+str(j)
+                structures[key]=structure2
+                
+        #interstitial
+        if calc=='Ga_I':
+            ints_list = []
+            ints_list = pylada_defects.get_interstitials(structure, ttol=1.0)
+            for j in range(len(ints_list)):
+                structure2 = deepcopy(structure)
+                structure2.add_atom(ints_list[j][0], ints_list[j][1], ints_list[j][2], 'Ga')
+                structure2[-1].spin = 1.
+                key = 'Ga_I'+'-'+str(j)
+                structures[key]=structure2
+
+        #bulk supercell
+        if calc=='bulk':
+            structures[calc]=structure
+
+        #vacancy
+        if calc=='V_Ga':
+            vacancy_indices = pylada_defects.get_atom_indices('Ga', structure)
+            for k in range(len(vacancy_indices)):
+                structure2 = deepcopy(structure)
+                for ii in find_ngh_indices(vacancy_indices[k], structure2):
+                    structure2[ii].pos = structure2[ii].pos + 0.1*np.array([2*random()-1, 2*random()-1, 2*random()-1])
+                    structure2[ii].spin = 1.
+                del structure2[vacancy_indices[k]]
+                key = 'V_Ga'+'-'+str(k)
+                structures[key]=structure2
+
+
+        #vacancy
+        if calc=='V_N':
+            vacancy_indices = pylada_defects.get_atom_indices('N', structure)
+            for k in range(len(vacancy_indices)):
+                structure2 = deepcopy(structure)
+                for ii in find_ngh_indices(vacancy_indices[k], structure2):
+                    structure2[ii].pos = structure2[ii].pos + 0.1*np.array([2*random()-1, 2*random()-1, 2*random()-1])
+                    structure2[ii].spin = 1.
+                del structure2[vacancy_indices[k]]
+                key = 'V_N'+'-'+str(k)
+                structures[key]=structure2
+
+        #anti-site
+        if calc=='N_Ga':
+            vacancy_indices = pylada_defects.get_atom_indices('Ga', structure)
+            for k in range(len(vacancy_indices)):
+                structure2 = deepcopy(structure)
+                for ii in find_ngh_indices(vacancy_indices[k], structure2):
+                    structure2[ii].pos = structure2[ii].pos + 0.1*np.array([2*random()-1, 2*random()-1, 2*random()-1])
+                    structure2[ii].spin = 1.
+                structure2[vacancy_indices[k]].type = 'N'
+                key = 'N_Ga'+'-'+str(k)
+                structures[key]=structure2
+
+        #anti-site
+        if calc=='Ga_N':
+            vacancy_indices = pylada_defects.get_atom_indices('N', structure)
+            for k in range(len(vacancy_indices)):
+                structure2 = deepcopy(structure)
+                for ii in find_ngh_indices(vacancy_indices[k], structure2):
+                    structure2[ii].pos = structure2[ii].pos + 0.1*np.array([2*random()-1, 2*random()-1, 2*random()-1])
+                    structure2[ii].spin = 1.
+                structure2[vacancy_indices[k]].type = 'Ga'
+                key = 'Ga_N'+'-'+str(k)
+                structures[key]=structure2
+
+############### setting up the jobfolder
+from IPython.core.interactiveshell import InteractiveShell
+from pylada.jobfolder import JobFolder
+from pylada import interactive
+from copy import deepcopy
+
+# Job dictionary.
+jobfolder = JobFolder()
+
+dirname = 'defects'
+
+# loop over material-lattice pairs.
+for name in structures:
+    prefix = name.split('-')[0]
+
+    if name=='epsilon':
+        structure=structures[name]
+  
+        # job folder for this lattice.
+        job = jobfolder / dirname / name
+        vasp_individual = deepcopy(vasp)
+  
+        vasp_individual.add_keyword('lepsilon',True)
+        vasp_individual.add_keyword('lrpa',False)
+        vasp_individual.ibrion = 7
+
+        vasp_individual.kpoints=gen_kpts(structure,1000)
+
+        job.functional = vasp_individual
+        job.params["structure"] = structure
+
+    else:
+        if prefix == 'N_I' or prefix == 'bulk' or prefix == 'Ga_I':
+            charges = np.array([0])
+        else:
+            charges = np.array([-3, -2, -1, 0, 1, 2, 3])
+
+        for charge in charges:
+        
+            structure=structures[name]
+        
+            # job folder for this lattice.
+            job = jobfolder / dirname / name / str(charge)
+            relax_individual = deepcopy(relax)
+            relax_individual.ispin=2
+  
+            magmom=''
+            for ii in range(len(structure)):
+                if hasattr(structure[ii],'spin'):
+                    magmom=magmom+'%s  ' %(structure[ii].spin)
+                else:
+                    magmom=magmom+'%s  ' %(0.)
+
+            relax_individual.magmom=gather_magmom(magmom)
+            relax_individual.extraelectron = deepcopy(-charge)
+            relax_individual.kpoints=gen_kpts(structure, 1)
+            relax_individual.ediffg = -0.01
+
+            job.functional = relax_individual
+            job.params["structure"] = structure
+
+%load_ext pylada
+%savefolders defects.pickle jobfolder
+%explore defects.pickle
+#%launch scattered --account=XXXXXX --walltime=XX:XX:XX --ppn=XX --queue=XXXXX

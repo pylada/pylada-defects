@@ -1,0 +1,56 @@
+do_multiple_mpi_programs=False
+
+mpirun_exe = "mpirun {program}"
+
+def machine_dependent_call_modifier(formatter=None, comm=None, env=None):
+    pass
+
+###################################################
+vasp_has_nlep = True
+
+################## QDEL definition ################
+qdel_exe = "qdel"
+
+################### QSTAT definition ##############
+def ipython_qstat(self, arg):
+
+  """ Prints jobs of current user. """
+  from subprocess import Popen, PIPE
+  from IPython.utils.text import SList
+  # get user jobs ids
+  jobs   = SList(Popen(['qstat', '-f', '-u', 'YOUR_USER_NAME'], stdout=PIPE)   \
+                .communicate()[0].split('\n'))
+  
+  names  = [ u[u.find('=')+1:].lstrip().rstrip()                               \
+             for u in jobs.grep('Job_Name') ]
+
+  mpps   = [u[u.find(':')+1:] for u in jobs.grep('Job Id')]
+
+  states = [ u[u.find('=')+1:].lstrip().rstrip()                               \
+             for u in jobs.grep('job_state') ]
+  ids    = [u[u.find(':')+1:].lstrip().rstrip() for u in jobs.grep('Job Id')]
+  return SList([ "{0:>10} {1:>4} {2:>3} -- {3}".format(id, mpp, state, name)   \
+                 for id, mpp, state, name in zip(ids, mpps, states, names)])
+
+
+##################### PBSSCRIPT #####################
+
+pbs_string =  '''
+#!/bin/bash
+#PBS -A {account}
+#PBS -q {queue}
+#PBS -m n
+#PBS -l walltime={walltime}
+#PBS -l nodes={nnodes}:ppn={ppn}
+#PBS -e {err}
+#PBS -o {out}
+#PBS -N {name}
+#PBS -d {directory}
+#PBS -l feature=!phi
+
+cd {directory}
+
+{header}
+python {scriptcommand}
+{footer}
+'''

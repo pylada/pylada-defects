@@ -36,4 +36,4 @@ Haowei Peng
 
 Stephan Lany
 
-Vladan Stevanovi\'{c}
+Vladan Stevanovi$\'{c}$
