@@ -41,11 +41,13 @@ Steps 5-9 should have pylada installed on your system!!
 
 10. Add following function in your $HOME/.bashrc if you plan to use pylada environment 
 
-```pyladaenv() {
-   module purge
-   "load-modules-that-you-may-need"
-   source activate nameofenv
-   }```
+```
+pyladaenv() {
+module purge
+"load-modules-that-you-may-need"
+source activate nameofenv
+}
+```
 
 #### before using pylada_defects.py
 
