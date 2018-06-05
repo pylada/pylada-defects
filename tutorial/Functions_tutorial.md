@@ -1,8 +1,5 @@
-## Defect automation code *pylada_defects.py*
-
----
-## Functions specific to Pylada
-
+## Overview of functions specific to Pylada
+----
 #### Structure manipulation functions
 
 > More details about the functions below can be found on the [documentation page](http://pylada.github.io/pylada/userguide/crystal.html)
